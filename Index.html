@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mis Cuentas</title>
+
+<style>
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+body{margin:0;background:#f2f2f7}
+header{
+  position:sticky;top:0;
+  background:white;
+  padding:14px 16px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:20px;
+  font-weight:600;
+}
+header button{background:none;border:none;font-size:20px}
+.list{padding:12px}
+.card,.movement{
+  background:white;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:10px;
+}
+.card h3{margin:0;font-size:17px}
+.total{margin-top:6px;font-size:14px;color:#555}
+.movement{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.amount.in{color:#2ecc71;font-weight:600}
+.amount.out{color:#e74c3c;font-weight:600}
+.date{font-size:12px;color:#999}
+.fab{
+  position:fixed;bottom:20px;right:20px;
+  width:56px;height:56px;
+  border-radius:50%;
+  background:#007aff;color:white;
+  font-size:30px;border:none;
+}
+.hidden{display:none}
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.4);
+  display:flex;align-items:end;
+}
+.sheet{
+  background:white;
+  width:100%;
+  border-radius:18px 18px 0 0;
+  padding:16px;
+}
+input,select{
+  width:100%;padding:12px;
+  margin:6px 0;border-radius:12px;
+  border:1px solid #ccc;font-size:16px
+}
+.sheet button{
+  width:100%;margin-top:10px;
+  background:#007aff;color:white;
+  border:none;padding:14px;
+  border-radius:14px;font-size:16px
+}
+.backup{font-size:14px;color:#007aff;text-align:center;margin-top:10px}
+</style>
+</head>
+
+<body>
+
+<header>
+  <button id="back" class="hidden" onclick="goBack()">‹</button>
+  <span id="title">Cuentas</span>
+</header>
+
+<div id="content" class="list"></div>
+
+<button class="fab" onclick="openModal()">＋</button>
+
+<div id="modal" class="modal hidden">
+  <div class="sheet">
+    <input id="name" placeholder="Nombre o descripción">
+    <input id="amount" type="number" placeholder="Monto">
+    <input id="date" type="date">
+    <select id="type">
+      <option value="in">Ingreso</option>
+      <option value="out">Egreso</option>
+    </select>
+    <button onclick="save()">Guardar</button>
+    <div class="backup" onclick="backup()">Exportar respaldo</div>
+  </div>
+</div>
+
+<script>
+let data=JSON.parse(localStorage.getItem("data"))||[];
+let current=null,startX=0;
+
+const saveData=()=>localStorage.setItem("data",JSON.stringify(data));
+
+function render(){
+  const c=document.getElementById("content");
+  c.innerHTML="";
+  document.getElementById("back").classList.toggle("hidden",current===null);
+  document.getElementById("title").innerText=current===null?"Cuentas":data[current].name;
+
+  if(current===null){
+    data.forEach((a,i)=>{
+      let total=a.movs.reduce((s,m)=>s+(m.type==="in"?m.amount:-m.amount),0);
+      let d=document.createElement("div");
+      d.className="card";
+      d.innerHTML=`<h3>${a.name}</h3><div class="total">$${total.toFixed(2)}</div>`;
+      d.onclick=()=>openAccount(i);
+      swipe(d,()=>confirm("¿Eliminar cuenta?")&&(data.splice(i,1),saveData(),render()));
+      c.appendChild(d);
+    });
+  }else{
+    data[current].movs.forEach((m,i)=>{
+      let d=document.createElement("div");
+      d.className="movement";
+      d.innerHTML=`
+        <div class="amount ${m.type}">$${m.amount}</div>
+        <div class="date">${m.date}</div>`;
+      swipe(d,()=>confirm("¿Eliminar movimiento?")&&(data[current].movs.splice(i,1),saveData(),render()));
+      c.appendChild(d);
+    });
+  }
+}
+
+function swipe(el,action){
+  el.ontouchstart=e=>startX=e.touches[0].clientX;
+  el.ontouchend=e=>{
+    if(startX-e.changedTouches[0].clientX>80)action();
+  };
+}
+
+function openModal(){document.getElementById("modal").classList.remove("hidden");}
+function closeModal(){
+  document.getElementById("modal").classList.add("hidden");
+  document.querySelectorAll("input").forEach(i=>i.value="");
+}
+
+function save(){
+  const n=name.value,a=+amount.value,
+  d=date.value||new Date().toISOString().slice(0,10),
+  t=type.value;
+  if(!n&&current===null)return;
+  current===null?data.push({name:n,movs:[]}):data[current].movs.push({amount:a,date:d,type:t});
+  saveData();closeModal();render();
+}
+
+function openAccount(i){current=i;render();}
+function goBack(){current=null;render();}
+
+function backup(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="respaldo-cuentas.json";
+  a.click();
+}
+
+render();
+</script>
+
+</body>
+</html>
