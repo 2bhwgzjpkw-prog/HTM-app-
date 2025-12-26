@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Mis Cuentas</title>
+<title>HTM Cuentas</title>
+
+<!-- ICONO -->
+<link rel="apple-touch-icon" href="icon.png">
 
 <style>
 *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -14,34 +17,45 @@ header{
   padding:14px 16px;
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
   font-size:20px;
   font-weight:600;
+  box-shadow:0 1px 0 rgba(0,0,0,.05);
 }
-header button{background:none;border:none;font-size:20px}
+header button{
+  background:none;border:none;
+  color:#007aff;
+  font-size:18px;
+}
 .list{padding:12px}
 .card,.movement{
   background:white;
-  border-radius:14px;
-  padding:14px;
+  border-radius:16px;
+  padding:16px;
   margin-bottom:10px;
+  transition:transform .25s ease,opacity .25s ease;
 }
 .card h3{margin:0;font-size:17px}
-.total{margin-top:6px;font-size:14px;color:#555}
+.total{
+  margin-top:6px;
+  font-size:22px;
+  font-weight:600;
+}
 .movement{
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
-.amount.in{color:#2ecc71;font-weight:600}
-.amount.out{color:#e74c3c;font-weight:600}
+.amount.in{color:#2ecc71}
+.amount.out{color:#e74c3c}
 .date{font-size:12px;color:#999}
 .fab{
   position:fixed;bottom:20px;right:20px;
   width:56px;height:56px;
   border-radius:50%;
   background:#007aff;color:white;
-  font-size:30px;border:none;
+  font-size:32px;border:none;
+  box-shadow:0 6px 12px rgba(0,0,0,.2);
 }
 .hidden{display:none}
 .modal{
@@ -52,46 +66,44 @@ header button{background:none;border:none;font-size:20px}
 .sheet{
   background:white;
   width:100%;
-  border-radius:18px 18px 0 0;
+  border-radius:22px 22px 0 0;
   padding:16px;
+  animation:up .25s ease;
 }
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
 input,select{
-  width:100%;padding:12px;
-  margin:6px 0;border-radius:12px;
+  width:100%;padding:14px;
+  margin:6px 0;border-radius:14px;
   border:1px solid #ccc;font-size:16px
 }
 .sheet button{
   width:100%;margin-top:10px;
   background:#007aff;color:white;
-  border:none;padding:14px;
-  border-radius:14px;font-size:16px
+  border:none;padding:16px;
+  border-radius:16px;font-size:17px
 }
-.backup{font-size:14px;color:#007aff;text-align:center;margin-top:10px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <button id="back" class="hidden" onclick="goBack()">‹</button>
+  <button id="back" class="hidden" onclick="goBack()">‹ Atrás</button>
   <span id="title">Cuentas</span>
 </header>
 
 <div id="content" class="list"></div>
-
 <button class="fab" onclick="openModal()">＋</button>
 
 <div id="modal" class="modal hidden">
   <div class="sheet">
-    <input id="name" placeholder="Nombre o descripción">
+    <input id="name" placeholder="Nombre de cuenta o descripción">
     <input id="amount" type="number" placeholder="Monto">
-    <input id="date" type="date">
     <select id="type">
       <option value="in">Ingreso</option>
       <option value="out">Egreso</option>
     </select>
     <button onclick="save()">Guardar</button>
-    <div class="backup" onclick="backup()">Exportar respaldo</div>
   </div>
 </div>
 
@@ -104,8 +116,8 @@ const saveData=()=>localStorage.setItem("data",JSON.stringify(data));
 function render(){
   const c=document.getElementById("content");
   c.innerHTML="";
-  document.getElementById("back").classList.toggle("hidden",current===null);
-  document.getElementById("title").innerText=current===null?"Cuentas":data[current].name;
+  back.classList.toggle("hidden",current===null);
+  title.innerText=current===null?"Cuentas":data[current].name;
 
   if(current===null){
     data.forEach((a,i)=>{
@@ -113,7 +125,7 @@ function render(){
       let d=document.createElement("div");
       d.className="card";
       d.innerHTML=`<h3>${a.name}</h3><div class="total">$${total.toFixed(2)}</div>`;
-      d.onclick=()=>openAccount(i);
+      d.onclick=()=>{current=i;render()};
       swipe(d,()=>confirm("¿Eliminar cuenta?")&&(data.splice(i,1),saveData(),render()));
       c.appendChild(d);
     });
@@ -121,9 +133,7 @@ function render(){
     data[current].movs.forEach((m,i)=>{
       let d=document.createElement("div");
       d.className="movement";
-      d.innerHTML=`
-        <div class="amount ${m.type}">$${m.amount}</div>
-        <div class="date">${m.date}</div>`;
+      d.innerHTML=`<div class="amount ${m.type}">$${m.amount}</div><div class="date">${m.type==="in"?"Ingreso":"Egreso"}</div>`;
       swipe(d,()=>confirm("¿Eliminar movimiento?")&&(data[current].movs.splice(i,1),saveData(),render()));
       c.appendChild(d);
     });
@@ -133,36 +143,34 @@ function render(){
 function swipe(el,action){
   el.ontouchstart=e=>startX=e.touches[0].clientX;
   el.ontouchend=e=>{
-    if(startX-e.changedTouches[0].clientX>80)action();
+    if(startX-e.changedTouches[0].clientX>80){
+      el.style.transform="translateX(-100%)";
+      setTimeout(action,200);
+    }
   };
 }
 
-function openModal(){document.getElementById("modal").classList.remove("hidden");}
-function closeModal(){
-  document.getElementById("modal").classList.add("hidden");
-  document.querySelectorAll("input").forEach(i=>i.value="");
+function openModal(){
+  modal.classList.remove("hidden");
+  amount.style.display=current===null?"none":"block";
+  type.style.display=current===null?"none":"block";
 }
 
 function save(){
-  const n=name.value,a=+amount.value,
-  d=date.value||new Date().toISOString().slice(0,10),
-  t=type.value;
-  if(!n&&current===null)return;
-  current===null?data.push({name:n,movs:[]}):data[current].movs.push({amount:a,date:d,type:t});
-  saveData();closeModal();render();
+  if(current===null){
+    if(!name.value)return alert("Nombre requerido");
+    data.push({name:name.value,movs:[]});
+  }else{
+    if(!amount.value)return alert("Monto requerido");
+    data[current].movs.push({amount:+amount.value,type:type.value});
+  }
+  saveData();
+  modal.classList.add("hidden");
+  name.value=amount.value="";
+  render();
 }
 
-function openAccount(i){current=i;render();}
-function goBack(){current=null;render();}
-
-function backup(){
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="respaldo-cuentas.json";
-  a.click();
-}
-
+function goBack(){current=null;render()}
 render();
 </script>
 
